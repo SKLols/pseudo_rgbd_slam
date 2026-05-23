@@ -1,0 +1,22 @@
+[1.410s] Invoking command in '/home/ubuntu2204/pseudo_rgbd_slam/pseudo_rgbd_slam': CONDA_PROMPT_MODIFIER=(slam_env) PYTHONPATH=/home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ubuntu2204/pseudo_rgbd_slam/install/pseudo_rgbd_slam/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/pseudo_rgbd_slam build --build-base /home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/build install --record /home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/install.log --single-version-externally-managed install_data
+[1.631s] running egg_info
+[1.632s] writing ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/PKG-INFO
+[1.633s] writing dependency_links to ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/dependency_links.txt
+[1.634s] writing entry points to ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/entry_points.txt
+[1.635s] writing requirements to ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/requires.txt
+[1.636s] writing top-level names to ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/top_level.txt
+[1.638s] reading manifest file '../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/SOURCES.txt'
+[1.639s] adding license file 'LICENSE'
+[1.639s] writing manifest file '../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/SOURCES.txt'
+[1.640s] running build
+[1.640s] running build_py
+[1.640s] running install
+[1.640s] running install_lib
+[1.642s] running install_data
+[1.642s] copying package.xml -> /home/ubuntu2204/pseudo_rgbd_slam/install/pseudo_rgbd_slam/share/pseudo_rgbd_slam
+[1.643s] running install_egg_info
+[1.644s] removing '/home/ubuntu2204/pseudo_rgbd_slam/install/pseudo_rgbd_slam/lib/python3.10/site-packages/pseudo_rgbd_slam-0.0.0-py3.10.egg-info' (and everything under it)
+[1.646s] Copying ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info to /home/ubuntu2204/pseudo_rgbd_slam/install/pseudo_rgbd_slam/lib/python3.10/site-packages/pseudo_rgbd_slam-0.0.0-py3.10.egg-info
+[1.649s] running install_scripts
+[1.672s] writing list of installed files to '/home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/install.log'
+[1.717s] Invoked command in '/home/ubuntu2204/pseudo_rgbd_slam/pseudo_rgbd_slam' returned '0': CONDA_PROMPT_MODIFIER=(slam_env) PYTHONPATH=/home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ubuntu2204/pseudo_rgbd_slam/install/pseudo_rgbd_slam/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/pseudo_rgbd_slam build --build-base /home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/build install --record /home/ubuntu2204/pseudo_rgbd_slam/build/pseudo_rgbd_slam/install.log --single-version-externally-managed install_data
