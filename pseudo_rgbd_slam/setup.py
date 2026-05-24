@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'node_a_broadcaster = pseudo_rgbd_slam.node_a_broadcaster:main',
         ],
     },
 )

@@ -10,6 +10,7 @@ setup.py
 ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/top_level.txt
 ../build/pseudo_rgbd_slam/pseudo_rgbd_slam.egg-info/zip-safe
 pseudo_rgbd_slam/__init__.py
+pseudo_rgbd_slam/node_a_broadcaster.py
 resource/pseudo_rgbd_slam
 test/test_copyright.py
 test/test_flake8.py
