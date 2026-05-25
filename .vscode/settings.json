@@ -1,0 +1,4 @@
+{
+    "python.defaultInterpreterPath": "/home/ubuntu2204/miniconda3/envs/slam_env/bin/python",
+    "python.terminal.activateEnvironment": true
+}
