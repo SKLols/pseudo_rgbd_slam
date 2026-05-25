@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'node_a_broadcaster = pseudo_rgbd_slam.node_a_broadcaster:main',
+            'node_b_depth_estimator = pseudo_rgbd_slam.node_b_depth_estimator:main',
         ],
     },
 )
