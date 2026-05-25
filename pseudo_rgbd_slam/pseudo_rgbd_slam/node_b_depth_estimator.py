@@ -41,8 +41,22 @@ class DepthEstimator(Node):
         #Subscriber
         self.subscription = self.create_subscription(Image, '/camera/rgb/image_raw', self.image_callback, 10)
 
+        self.bridge = CvBridge()
+
+        #Publisher for depth images
+        self.depth_publisher = self.create_publisher(Image, '/camera/depth/image_raw', 10)
+
     def image_callback(self, msg):
-        pass
+        #Convert ROS2 Image message to OpenCV image
+        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+
+        #Run inference
+        depth = self.model.infer_image(cv_image)
+
+        #Convert depth map to ROS Image message and publish
+        depth_msg = self.bridge.cv2_to_imgmsg(depth, encoding='32FC1')
+        self.depth_publisher.publish(depth_msg)
+        self.get_logger().info(f'Depth range: {depth.min():.2f}m - {depth.max():.2f}m')
     
 def main(args=None):
     rclpy.init(args=args)
