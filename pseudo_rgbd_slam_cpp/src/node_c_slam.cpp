@@ -11,6 +11,9 @@
 #include <sstream>
 #include <iomanip>
 
+#include "nav_msgs/msg/path.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+
 class PseudoSLAM : public rclcpp::Node
 {
     public:
@@ -28,6 +31,9 @@ class PseudoSLAM : public rclcpp::Node
             rgb_txt_.open(output_path_ + "/rgb.txt", std::ios::trunc);
             depth_txt_.open(output_path_ + "/depth.txt", std::ios::trunc);
             frame_count_ = 0;
+
+            path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/slam/trajectory", 10);
+            path_.header.frame_id = "map";
         }
 
         ~PseudoSLAM()
@@ -73,6 +79,14 @@ class PseudoSLAM : public rclcpp::Node
     
             frame_count_++;
             RCLCPP_INFO(this->get_logger(), "Saved frame %d: %s", frame_count_, ts_str.c_str());
+
+            geometry_msgs::msg::PoseStamped pose;
+            pose.header.stamp = rgb_msg->header.stamp;
+            pose.header.frame_id = "map";
+            pose.pose.position.x = timestamp; // placeholder
+            path_.poses.push_back(pose);
+            path_.header.stamp = rgb_msg->header.stamp;
+            path_pub_->publish(path_);
         }
 
     private:
@@ -89,6 +103,9 @@ class PseudoSLAM : public rclcpp::Node
         std::ofstream rgb_txt_;
         std::ofstream depth_txt_;
         int frame_count_;
+
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+        nav_msgs::msg::Path path_;
 };
 
 int main(int argc, char **argv)
