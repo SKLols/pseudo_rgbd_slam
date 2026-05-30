@@ -55,6 +55,8 @@ class DepthEstimator(Node):
 
         #Convert depth map to ROS Image message and publish
         depth_msg = self.bridge.cv2_to_imgmsg(depth, encoding='32FC1')
+        depth_msg.header.stamp = msg.header.stamp  # ADD - copy from RGB
+        depth_msg.header.frame_id = 'camera'
         self.depth_publisher.publish(depth_msg)
         self.get_logger().info(f'Depth range: {depth.min():.2f}m - {depth.max():.2f}m')
     

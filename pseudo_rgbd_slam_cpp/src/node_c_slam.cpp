@@ -4,6 +4,13 @@
 #include "message_filters/synchronizer.h"
 #include "sensor_msgs/msg/image.hpp"
 
+#include "cv_bridge/cv_bridge.h"
+#include "opencv2/opencv.hpp"
+
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+
 class PseudoSLAM : public rclcpp::Node
 {
     public:
@@ -16,6 +23,11 @@ class PseudoSLAM : public rclcpp::Node
             sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
                 SyncPolicy(10), rgb_sub_, depth_sub_);
             sync_->registerCallback(&PseudoSLAM::callback,this);
+
+            output_path_ = "/home/ubuntu2204/datasets/pseudo_rgbd";
+            rgb_txt_.open(output_path_ + "/rgb.txt");
+            depth_txt_.open(output_path_ + "/depth.txt");
+            frame_count_ = 0;
         }
 
         void callback(
@@ -24,6 +36,10 @@ class PseudoSLAM : public rclcpp::Node
         )
         {
             RCLCPP_INFO(this->get_logger(), "Recieved synchronized RGB + Depth");
+            double timestamp = rgb_msg->header.stamp.sec + 
+                       rgb_msg->header.stamp.nanosec * 1e-9;
+    
+            RCLCPP_INFO(this->get_logger(), "Timestamp: %f", timestamp);
         }
 
     private:
@@ -35,6 +51,11 @@ class PseudoSLAM : public rclcpp::Node
             sensor_msgs::msg::Image> SyncPolicy;
 
         std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
+
+        std::string output_path_;
+        std::ofstream rgb_txt_;
+        std::ofstream depth_txt_;
+        int frame_count_;
 };
 
 int main(int argc, char **argv)

@@ -51,6 +51,8 @@ class RGBBrodcaster ( Node ):
 
         #convert to ROS Image message
         msg = self.bridge.cv2_to_imgmsg(image, encoding = 'bgr8')
+        msg.header.stamp = self.get_clock().now().to_msg()  # ADD
+        msg.header.frame_id = 'camera'
 
         #publish the message
         self.publisher.publish(msg)
