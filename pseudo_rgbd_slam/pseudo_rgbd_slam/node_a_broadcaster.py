@@ -27,12 +27,18 @@ class RGBBrodcaster ( Node ):
             self.get_logger().info(f'Last frame: {self.frame_list[-1]}')
         
         self.publisher = self.create_publisher(Image, '/camera/rgb/image_raw', 10)
-        self.timer = self.create_timer(1/30, self.timer_callback)
+        self.timer = self.create_timer(1/8, self.timer_callback)
         self.frame_idx = 0
 
         self.bridge = CvBridge()
 
     def timer_callback(self):
+
+        # Wait until someone is subscribed
+        if self.publisher.get_subscription_count() == 0:
+            self.get_logger().info('Waiting for subscriber...', throttle_duration_sec=2.0)
+            return
+    
         if self.frame_idx >= len(self.frame_list):
             self.get_logger().info('All frames published, stopping timer')
             self.timer.cancel()
@@ -51,7 +57,10 @@ class RGBBrodcaster ( Node ):
 
         #convert to ROS Image message
         msg = self.bridge.cv2_to_imgmsg(image, encoding = 'bgr8')
-        msg.header.stamp = self.get_clock().now().to_msg()  # ADD
+        #msg.header.stamp = self.get_clock().now().to_msg() 
+        ts_float = float(timestamp)  # timestamp string from rgb.txt
+        msg.header.stamp.sec = int(ts_float)
+        msg.header.stamp.nanosec = int((ts_float - int(ts_float)) * 1e9)
         msg.header.frame_id = 'camera'
 
         #publish the message

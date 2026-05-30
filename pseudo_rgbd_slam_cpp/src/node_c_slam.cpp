@@ -21,13 +21,19 @@ class PseudoSLAM : public rclcpp::Node
             depth_sub_.subscribe(this, "/camera/depth/image_raw");
             
             sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
-                SyncPolicy(10), rgb_sub_, depth_sub_);
+                SyncPolicy(50), rgb_sub_, depth_sub_);
             sync_->registerCallback(&PseudoSLAM::callback,this);
 
             output_path_ = "/home/ubuntu2204/datasets/pseudo_rgbd";
-            rgb_txt_.open(output_path_ + "/rgb.txt");
-            depth_txt_.open(output_path_ + "/depth.txt");
+            rgb_txt_.open(output_path_ + "/rgb.txt", std::ios::trunc);
+            depth_txt_.open(output_path_ + "/depth.txt", std::ios::trunc);
             frame_count_ = 0;
+        }
+
+        ~PseudoSLAM()
+        {
+            rgb_txt_.close();
+            depth_txt_.close();
         }
 
         void callback(
@@ -40,6 +46,33 @@ class PseudoSLAM : public rclcpp::Node
                        rgb_msg->header.stamp.nanosec * 1e-9;
     
             RCLCPP_INFO(this->get_logger(), "Timestamp: %f", timestamp);
+
+            // Convert to cv::Mat
+            cv_bridge::CvImagePtr rgb_cv = cv_bridge::toCvCopy(rgb_msg, "bgr8");
+            cv_bridge::CvImagePtr depth_cv = cv_bridge::toCvCopy(depth_msg, "32FC1");
+
+            // Create filename from timestamp
+            std::ostringstream ss;
+            ss << std::fixed << std::setprecision(6) << timestamp;
+            std::string ts_str = ss.str();
+
+            // Save images
+            std::string rgb_path = output_path_ + "/rgb/" + ts_str + ".png";
+            std::string depth_path = output_path_ + "/depth/" + ts_str + ".png";
+    
+            cv::imwrite(rgb_path, rgb_cv->image);
+            cv::Mat depth_16bit;
+            depth_cv->image.convertTo(depth_16bit, CV_16U, 5000.0);
+            cv::imwrite(depth_path, depth_16bit);
+
+            // Write to txt files
+            rgb_txt_ << ts_str << " rgb/" << ts_str << ".png\n";
+            rgb_txt_.flush();
+            depth_txt_ << ts_str << " depth/" << ts_str << ".png\n";
+            depth_txt_.flush();
+    
+            frame_count_++;
+            RCLCPP_INFO(this->get_logger(), "Saved frame %d: %s", frame_count_, ts_str.c_str());
         }
 
     private:
