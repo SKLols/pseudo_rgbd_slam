@@ -8,13 +8,15 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(sensor_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 #add  executables
 add_executable(node_c_slam src/node_c_slam.cpp)
-ament_target_dependencies(node_c_slam rclcpp)
+ament_target_dependencies(node_c_slam rclcpp message_filters sensor_msgs)
 
 #install
 install(TARGETS node_c_slam
