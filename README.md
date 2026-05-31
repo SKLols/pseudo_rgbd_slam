@@ -2,6 +2,16 @@
 
 Replaces a physical depth sensor with Depth Anything V2 (neural network) to run ORB-SLAM2 RGB-D SLAM using only an RGB camera. Built as a modular 3-node ROS2 pipeline.
 
+## Results
+
+| Metric | Ground Truth (Real Depth) | Pseudo RGB-D (Neural Depth) |
+|--------|--------------------------|------------------------------|
+| Frames processed | 573 | 411 (67%) |
+| Camera poses | 573 | 198 |
+| Tracking loss | None | None |
+| ATE RMSE | ~1-2 cm | **6.15 cm** |
+| Scale correction | — | 0.615 (1.6× overestimate) |
+
 ## Architecture
 
     Node A (Python)         Node B (Python)          Node C (C++)
@@ -10,12 +20,7 @@ Replaces a physical depth sensor with Depth Anything V2 (neural network) to run 
 
     /camera/rgb/image_raw  -->  /camera/depth/image_raw  -->  /slam/trajectory
 
-    After pipeline: run rgbd_tum on saved frames --> CameraTrajectory.txt
-
-## Results
-
-- 411 frames processed, 198 poses saved, 39 keyframes
-- Neural depth vs real depth sensor trajectory comparison:
+    After pipeline: rgbd_tum on saved frames --> CameraTrajectory.txt
 
 ## System Requirements
 
@@ -23,27 +28,38 @@ Replaces a physical depth sensor with Depth Anything V2 (neural network) to run 
 - ROS2 Humble
 - Python 3.10 (conda)
 - NVIDIA GPU 2GB+ recommended (CPU works at ~2fps)
-- 4GB RAM + 4GB swap minimum
+- 4GB RAM + 4GB swap minimum (set in .wslconfig for WSL2)
 
 ---
 
 ## Setup
 
-### 1. ROS2 Humble
+### 1. WSL2 Memory (Windows only)
+
+Create C:\Users\YOUR_USERNAME\.wslconfig:
+
+    [wsl2]
+    memory=4GB
+    swap=4GB
+
+Then in PowerShell: wsl --shutdown and reopen Ubuntu.
+
+### 2. ROS2 Humble
+
 Official guide: https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html
 
     sudo apt install ros-humble-desktop ros-dev-tools -y
     echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
     source ~/.bashrc
 
-### 2. Conda Environment
+### 3. Conda Environment
 
     conda create -n slam_env python=3.10 -y
     conda activate slam_env
-    pip install catkin-pkg "numpy==1.26.4"
+    pip install catkin-pkg "numpy==1.26.4" evo
     sudo apt install ros-humble-cv-bridge python3-colcon-common-extensions -y
 
-### 3. ORB-SLAM2 (UCL Fork - OpenCV4 compatible)
+### 4. ORB-SLAM2 (UCL Fork - OpenCV4 compatible)
 
 WARNING: Deactivate conda before building
 
@@ -59,28 +75,32 @@ WARNING: Deactivate conda before building
     echo "export PATH=\$PATH:$HOME/ORB_SLAM2/Install/bin" >> ~/.bashrc
     echo "export CMAKE_PREFIX_PATH=/usr/share/eigen3/cmake:\$CMAKE_PREFIX_PATH" >> ~/.bashrc
 
-WSL2 Note: Pangolin viewer crashes due to OpenGL limitations.
-Disable it by changing true to false in Source/Examples/RGB-D/rgbd_tum.cc
-System constructor, then rebuild with ./Build.sh
+WSL2 Notes:
+- Disable Pangolin viewer: change true to false in Source/Examples/RGB-D/rgbd_tum.cc System constructor, rebuild
+- To re-enable viewer with software rendering: export LIBGL_ALWAYS_SOFTWARE=1 && export DISPLAY=:0
+- Add sleep before StopViewer() to keep viewer open long enough to interact
 
-Generate binary vocabulary (run from ~/ORB_SLAM2/Install/var/lib/orbslam2/):
+Generate binary vocabulary:
 
     conda activate slam_env
+    cd ~/ORB_SLAM2/Install/var/lib/orbslam2/
     python3 ~/pseudo_rgbd_slam/scripts/convert_vocab.py
 
-### 4. TUM Dataset
+### 5. TUM Dataset
 
     mkdir -p ~/datasets/tum && cd ~/datasets/tum
     wget https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk.tgz
     tar -xzf rgbd_dataset_freiburg1_desk.tgz
     mkdir -p ~/datasets/pseudo_rgbd/{rgb,depth}
 
-Validate standalone ORB-SLAM2 works:
+Validate standalone ORB-SLAM2:
 
     cd ~/datasets/tum/rgbd_dataset_freiburg1_desk
     rgbd_tum TUM1.yaml . ~/ORB_SLAM2/Install/etc/orbslam2/RGB-D/associations/fr1_desk.txt
 
-### 5. Depth Anything V2 (Metric Indoor)
+Expected: 573 frames, New map created with ~946 points, trajectory saved
+
+### 6. Depth Anything V2 (Metric Indoor)
 
     conda activate slam_env
     git clone https://github.com/DepthAnything/Depth-Anything-V2.git ~/Depth-Anything-V2
@@ -90,7 +110,7 @@ Validate standalone ORB-SLAM2 works:
     wget "https://huggingface.co/depth-anything/Depth-Anything-V2-Metric-Hypersim-Small/resolve/main/depth_anything_v2_metric_hypersim_vits.pth?download=true" \
       -O depth_anything_v2_metric_hypersim_vits.pth
 
-### 6. Build This Package
+### 7. Build This Package
 
     conda activate slam_env
     git clone https://github.com/SKLols/pseudo_rgbd_slam.git
@@ -109,7 +129,7 @@ IMPORTANT: In pseudo_rgbd_slam/setup.cfg add under [build_scripts]:
     # Single command starts all 3 nodes in correct order
     ros2 launch pseudo_rgbd_slam pipeline.launch.py
 
-Wait for all frames to be saved (~2 minutes), then run ORB-SLAM2:
+Wait for Node A to print "All frames published" (~2 minutes), then run ORB-SLAM2:
 
     cd ~/datasets/pseudo_rgbd
 
@@ -126,33 +146,41 @@ Wait for all frames to be saved (~2 minutes), then run ORB-SLAM2:
 
     rgbd_tum TUM1.yaml . associations.txt
 
-Visualize trajectory:
+---
 
-    python3 ~/pseudo_rgbd_slam/scripts/plot_trajectory.py
+## Evaluate Trajectory Accuracy (ATE)
+
+    cd ~/datasets/pseudo_rgbd
+    evo_ape tum ~/datasets/tum/rgbd_dataset_freiburg1_desk/groundtruth.txt \
+        CameraTrajectory.txt --align --correct_scale --plot --verbose
 
 ---
 
-## Visualization (RViz2)
+## Visualize Results
 
-While pipeline is running:
+    # Trajectory comparison plot
+    python3 ~/pseudo_rgbd_slam/scripts/plot_trajectory.py
 
+    # Live feed during pipeline
     ros2 run rviz2 rviz2
+    # Add: Image(/camera/rgb/image_raw), Image(/camera/depth/image_raw), Path(/slam/trajectory)
 
-Add displays:
-- Image: /camera/rgb/image_raw
-- Image: /camera/depth/image_raw
-- Path: /slam/trajectory
+    # Pangolin 3D viewer (after pipeline, on saved data)
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export DISPLAY=:0
+    cd ~/datasets/pseudo_rgbd
+    rgbd_tum TUM1.yaml . associations.txt
 
 ---
 
 ## Performance
 
-| Component          | Hardware      | FPS    |
-|--------------------|---------------|--------|
-| Node A (dataset)   | Any           | 8 FPS  |
-| Node B (depth NN)  | GPU 2GB+      | ~8 FPS |
-| Node B (depth NN)  | CPU only      | ~2 FPS |
-| ORB-SLAM2          | Any           | ~50 FPS|
+| Component | Hardware | FPS |
+|-----------|----------|-----|
+| Node A (dataset reader) | Any | 8 FPS |
+| Node B (depth inference) | GPU 2GB+ | ~8 FPS |
+| Node B (depth inference) | CPU only | ~2 FPS |
+| ORB-SLAM2 | Any CPU | ~50 FPS capable |
 
 Bottleneck: Node B depth inference. Pipeline designed at 8fps to match.
 
@@ -163,11 +191,12 @@ Bottleneck: Node B depth inference. Pipeline designed at 8fps to match.
 | Issue | Fix |
 |-------|-----|
 | OpenCV 4 build errors | Use UCL fork, not original ORB-SLAM2 |
-| Pangolin segfault WSL2 | Disable viewer in rgbd_tum.cc, recompile |
+| Pangolin segfault WSL2 | export LIBGL_ALWAYS_SOFTWARE=1 before running |
 | No module named torch | Fix shebang in setup.cfg to use conda Python |
 | numpy/cv_bridge conflict | pip uninstall opencv-python && pip install numpy==1.26.4 |
 | Eigen3 not found | export CMAKE_PREFIX_PATH=/usr/share/eigen3/cmake |
-| OOM during C++ build | Set WSL2 memory to 4GB+4GB swap in .wslconfig |
+| OOM during C++ build | Set WSL2 memory=4GB swap=4GB in .wslconfig |
+| Only ~67% frames synced | Increase sync queue size in node_c_slam.cpp |
 
 ---
 
@@ -179,15 +208,15 @@ Bottleneck: Node B depth inference. Pipeline designed at 8fps to match.
     │   ├── trajectory.png
     │   └── trajectory_comparison.png
     ├── scripts/
-    │   ├── convert_vocab.py
-    │   └── plot_trajectory.py
-    ├── pseudo_rgbd_slam/              # Python package (Node A + B)
+    │   ├── convert_vocab.py        # Convert ORB vocabulary txt -> bin
+    │   └── plot_trajectory.py      # Plot trajectory comparison
+    ├── pseudo_rgbd_slam/           # Python ROS2 package (Node A + B)
     │   ├── launch/
     │   │   └── pipeline.launch.py
     │   └── pseudo_rgbd_slam/
     │       ├── node_a_broadcaster.py
     │       └── node_b_depth_estimator.py
-    └── pseudo_rgbd_slam_cpp/          # C++ package (Node C)
+    └── pseudo_rgbd_slam_cpp/       # C++ ROS2 package (Node C)
         └── src/
             └── node_c_slam.cpp
 
@@ -200,6 +229,7 @@ Bottleneck: Node B depth inference. Pipeline designed at 8fps to match.
 - [x] Phase 3: Node B - Depth Anything V2 metric (~8fps GPU)
 - [x] Phase 4: Node C - Synchronized RGB+Depth saver (C++ ROS2)
 - [x] Phase 5: Launch file - single command pipeline
-- [x] Phase 6: Results - 411 frames, 198 poses, trajectory comparison
-- [ ] Phase 7: Screen recording
-- [ ] Phase 8: Report
+- [x] Phase 6: Results - 411 frames, 198 poses, ATE RMSE=6.15cm
+- [x] Phase 7: Pangolin viewer working (software OpenGL on WSL2)
+- [x] Phase 8: Report generated with ATE evaluation
+- [ ] Phase 9: Screen recording
